@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export const TTSPlayer = (): any => {
+export const TTSPlayer = (): React.ReactElement => {
   const [prompt, setprompt] = useState("");
   //   const audio = useAudioStream
 
