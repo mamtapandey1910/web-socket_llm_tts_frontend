@@ -1,21 +1,34 @@
 import { useEffect, useRef } from "react";
 
+interface StreamState {
+  audioElem: HTMLAudioElement | null;
+  mediaSource: MediaSource | null;
+  sourceBuffer: SourceBuffer | null;
+  queue: Array<ArrayBuffer>;
+}
+
 export const handleAudio = (type: string) => {
-  const audioRef = useRef(null);
-  const mediaRef = useRef<MediaSource>(null);
-  const bufferRef = useRef<any>(null);
+  const streamRef = useRef<StreamState>({
+    audioElem: null,
+    mediaSource: null,
+    sourceBuffer: null,
+    queue: [],
+  });
 
   useEffect(() => {
-    const media = new MediaSource();
-    mediaRef.current = media;
+    const mediaSource = new MediaSource();
+    streamRef.current.mediaSource = mediaSource;
 
-    const audio: any = audioRef.current;
-    audio.src = URL.createObjectURL(media);
+    const audio = streamRef.current.audioElem;
+    if (audio) {
+      audio.src = URL.createObjectURL(mediaSource);
+    }
 
-    media.addEventListener("sourceopen", () => {
-      bufferRef.current = media.addSourceBuffer(type);
+    mediaSource.addEventListener("sourceopen", () => {
+      const sourceBuffer: SourceBuffer = mediaSource.addSourceBuffer(type);
+      streamRef.current.sourceBuffer = sourceBuffer;
 
-      bufferRef.current.addEventListener("updateend");
+      sourceBuffer.addEventListener("updateend", () => {});
     });
   }, []);
 };
