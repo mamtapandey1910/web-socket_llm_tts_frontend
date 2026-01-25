@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { handleAudio } from "./handleAudio";
 
 export const TTSPlayer = (): React.ReactElement => {
   const [prompt, setprompt] = useState("");
-  //   const audio = useAudioStream
+  const audio = handleAudio("audio/mpeg");
 
   return (
     <div>
@@ -10,7 +11,9 @@ export const TTSPlayer = (): React.ReactElement => {
         name="prompt"
         id="promptId"
         value={prompt}
-        onChange={(e) => setprompt(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+          setprompt(e.target.value)
+        }
       ></textarea>
     </div>
   );
