@@ -19,16 +19,15 @@ export const handleAudio = (type: string) => {
     const mediaSource = new MediaSource();
     streamRef.current.mediaSource = mediaSource;
 
-    const audio = streamRef.current.audioElem;
+    const audio: HTMLAudioElement | null = streamRef.current.audioElem;
     if (audio) {
       audio.src = URL.createObjectURL(mediaSource);
     }
 
     mediaSource.addEventListener("sourceopen", () => {
-      const sourceBuffer: SourceBuffer = mediaSource.addSourceBuffer(type);
-      streamRef.current.sourceBuffer = sourceBuffer;
-
-      sourceBuffer.addEventListener("updateend", () => {});
+      const sb = mediaSource.addSourceBuffer(type);
+      streamRef.current.sourceBuffer = sb;
+      sb.addEventListener("updateend", () => {});
     });
   }, []);
 };
