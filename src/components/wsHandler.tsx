@@ -7,7 +7,7 @@ export const wsConnection = (
   const wsRef = useRef<any>(null);
 
   useEffect(() => {
-    const ws = new WebSocket(url);
+    const ws: WebSocket = new WebSocket(url);
     ws.binaryType = "arraybuffer";
     wsRef.current = ws;
 
@@ -18,4 +18,10 @@ export const wsConnection = (
 
     return () => ws.close();
   }, [url]);
+
+  const send = (data: any) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(data);
+    }
+  };
 };
