@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 
-export const wsConnection = (
+export const useWsConnection = (
   url: string,
   handlers: Record<string, any> = {},
 ) => {
-  const wsRef = useRef<any>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     const ws: WebSocket = new WebSocket(url);
@@ -16,7 +16,7 @@ export const wsConnection = (
     ws.onerror = handlers.onError;
     ws.onclose = handlers.onClose;
 
-    return () => ws.close();
+    // return () => ws.close();
   }, [url]);
 
   const send = (data: any) => {
@@ -24,4 +24,6 @@ export const wsConnection = (
       wsRef.current.send(data);
     }
   };
+
+  return { send, socket: wsRef };
 };

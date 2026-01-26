@@ -1,0 +1,62 @@
+.audio-container {
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fdfdfd;
+  font-family: sans-serif;
+}
+
+.audio-container h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.audio-container textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.audio-container button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  background-color: #4f46e5;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: background-color 0.2s;
+}
+
+.audio-container button:hover {
+  background-color: #4338ca;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background-color: #eee;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #4f46e5;
+  transition: width 0.1s linear;
+}
+
+.audio-container audio {
+  width: 100%;
+  border-radius: 8px;
+}
