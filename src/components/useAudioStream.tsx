@@ -1,71 +1,37 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useRef } from "react";
 
-export const useAudioStream = (mimeType: string) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const mediaSourceRef = useRef<MediaSource | null>(null);
-  const sourceBufferRef = useRef<SourceBuffer | null>(null);
-  const queueRef = useRef<Uint8Array[]>([]);
+export const useAudioStream = () => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const chunksRef = useRef<any[]>([]);
 
-  const flushQueue = useCallback(() => {
-    const sb = sourceBufferRef.current;
-    const queue: any = queueRef.current;
-
-    if (!sb || sb.updating || queue.length === 0) return;
-
-    sb.appendBuffer(queue.shift()!);
-  }, []);
-
-  useEffect(() => {
-    if (!audioRef.current) return;
-
-    const mediaSource = new MediaSource();
-    mediaSourceRef.current = mediaSource;
-
-    const audio = audioRef.current;
-    audio.src = URL.createObjectURL(mediaSource);
-
-    const onSourceOpen = () => {
-      const sb = mediaSource.addSourceBuffer(mimeType);
-      sourceBufferRef.current = sb;
-      sb.addEventListener("updateend", flushQueue);
-    };
-
-    mediaSource.addEventListener("sourceopen", onSourceOpen);
-
-    return () => {
-      mediaSource.removeEventListener("sourceopen", onSourceOpen);
-      URL.revokeObjectURL(audio.src);
-    };
-  }, [mimeType, flushQueue]);
-
-  const appendChunk = useCallback((chunk: Uint8Array<ArrayBufferLike>) => {
-    const sb = sourceBufferRef.current;
-
-    const uint8Chunk = new Uint8Array(chunk);
-
-    if (!sb || sb.updating) {
-      queueRef.current.push(uint8Chunk);
-      return;
-    }
-
-    sb.appendBuffer(uint8Chunk);
-  }, []);
-
-  const play = useCallback(() => {
-    audioRef.current?.play();
-  }, []);
-
-  const stop = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.pause();
-    audio.currentTime = 0;
-  }, []);
-
-  return {
-    audioRef,
-    appendChunk,
-    play,
-    stop,
+  const appendChunk = (chunk: ArrayBuffer) => {
+    chunksRef.current.push(new Uint8Array(chunk));
+    play(); // play automatically
   };
+
+  const endStream = () => {
+    const audioEl = audioRef.current;
+    if (!audioEl || chunksRef.current.length === 0) return;
+
+    const blob = new Blob(chunksRef.current, { type: "audio/mpeg" });
+    chunksRef.current = [];
+    const url = URL.createObjectURL(blob);
+    audioEl.src = url;
+    audioEl.play().catch((err) => console.warn("Audio play failed:", err));
+  };
+
+  const play = () => {
+    const audioEl = audioRef.current;
+    if (!audioEl) return;
+    if (audioEl.paused) {
+      audioEl.play().catch((err) => console.warn("Audio play failed:", err));
+    }
+  };
+
+  // Clear previous chunks when sending new message
+  const clearChunks = () => {
+    chunksRef.current = [];
+  };
+
+  return { audioRef, appendChunk, endStream, play, clearChunks };
 };

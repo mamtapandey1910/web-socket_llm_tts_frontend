@@ -9,31 +9,33 @@ export const TTSPlayer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [messages, setMessages] = useState<string[]>([]);
 
-  const audio = useAudioStream("audio/mpeg");
+  const audio = useAudioStream();
 
-  // WebSocket connection
   const { send } = useWsConnection("ws://localhost:8000", {
     onOpen: () => console.log("WS connected"),
-
     onMessage: (event: any) => {
       if (event.data instanceof ArrayBuffer) {
+        // Append audio chunk
         audio.appendChunk(event.data);
 
         const audioEl = audio.audioRef.current;
-        if (audioEl && audioEl.paused) {
+        // Play only if it's not already playing
+        if (audioEl && !isPlaying) {
           audio.play();
-          setIsPlaying(true);
+          setIsPlaying(true); // mark as playing
         }
-
-        if (event.messageText) {
-          setMessages((prev) => [...prev, event.messageText]);
-        }
-
         return;
       }
 
       try {
         const parsed = JSON.parse(event.data);
+
+        if (parsed.type === "TTS_END") {
+          audio.endStream();
+          setIsPlaying(false);
+          return;
+        }
+
         if (parsed.message) {
           setMessages((prev) => [...prev, parsed.message]);
         }
@@ -44,7 +46,16 @@ export const TTSPlayer = () => {
   });
 
   const sendPrompt = () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim() || isPlaying) return;
+
+    // Clear old audio
+    const audioEl = audio.audioRef.current;
+    if (audioEl) {
+      audioEl.pause();
+      audioEl.src = "";
+    }
+    audio.clearChunks();
+    setIsPlaying(false);
 
     send(
       JSON.stringify({
@@ -67,19 +78,16 @@ export const TTSPlayer = () => {
       }
     };
 
-    const onPlay = () => setIsPlaying(true);
     const onEnded = () => {
       setIsPlaying(false);
       setProgress(0);
     };
 
     audioEl.addEventListener("timeupdate", updateProgress);
-    audioEl.addEventListener("play", onPlay);
     audioEl.addEventListener("ended", onEnded);
 
     return () => {
       audioEl.removeEventListener("timeupdate", updateProgress);
-      audioEl.removeEventListener("play", onPlay);
       audioEl.removeEventListener("ended", onEnded);
     };
   }, [audio.audioRef]);
@@ -92,11 +100,11 @@ export const TTSPlayer = () => {
         rows={4}
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
-        placeholder="Type your text here.."
+        placeholder="Type your text here..."
       />
 
       <button onClick={sendPrompt} disabled={isPlaying}>
-        Send & Play
+        {isPlaying ? "Playing..." : "Send & Play"}
       </button>
 
       <div className="progress-bar">
@@ -108,9 +116,7 @@ export const TTSPlayer = () => {
       <div className="message-log">
         <h4>Messages Log</h4>
         {messages.map((msg, index) => (
-          <div key={index} className="message-item">
-            {msg}
-          </div>
+          <div key={index}>{msg}</div>
         ))}
       </div>
     </div>
