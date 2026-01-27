@@ -1,37 +1,97 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
-export const useAudioStream = () => {
+export function useAudioStream(mimeType = "audio/mpeg") {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const chunksRef = useRef<any[]>([]);
+  const mediaSourceRef = useRef<MediaSource | null>(null);
+  const sourceBufferRef = useRef<SourceBuffer | null>(null);
+  const queueRef = useRef<ArrayBuffer[]>([]);
+  const endedRef = useRef(false);
+
+  const initMediaSource = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const mediaSource = new MediaSource();
+    mediaSourceRef.current = mediaSource;
+    audio.src = URL.createObjectURL(mediaSource);
+
+    mediaSource.addEventListener("sourceopen", () => {
+      if (sourceBufferRef.current) return;
+
+      const sourceBuffer = mediaSource.addSourceBuffer(mimeType);
+      sourceBuffer.mode = "sequence";
+      sourceBufferRef.current = sourceBuffer;
+
+      sourceBuffer.addEventListener("updateend", () => {
+        if (queueRef.current.length > 0 && !sourceBuffer.updating) {
+          sourceBuffer.appendBuffer(queueRef.current.shift()!);
+        }
+      });
+    });
+  };
+
+  useEffect(() => {
+    initMediaSource();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const appendChunk = (chunk: ArrayBuffer) => {
-    chunksRef.current.push(new Uint8Array(chunk));
-    play(); // play automatically
-  };
+    if (endedRef.current) return;
 
-  const endStream = () => {
-    const audioEl = audioRef.current;
-    if (!audioEl || chunksRef.current.length === 0) return;
+    const mediaSource = mediaSourceRef.current;
+    const sourceBuffer = sourceBufferRef.current;
 
-    const blob = new Blob(chunksRef.current, { type: "audio/mpeg" });
-    chunksRef.current = [];
-    const url = URL.createObjectURL(blob);
-    audioEl.src = url;
-    audioEl.play().catch((err) => console.warn("Audio play failed:", err));
-  };
+    if (!mediaSource || !sourceBuffer) return;
+    if (mediaSource.readyState !== "open") return;
 
-  const play = () => {
-    const audioEl = audioRef.current;
-    if (!audioEl) return;
-    if (audioEl.paused) {
-      audioEl.play().catch((err) => console.warn("Audio play failed:", err));
+    if (sourceBuffer.updating || queueRef.current.length > 0) {
+      queueRef.current.push(chunk);
+    } else {
+      sourceBuffer.appendBuffer(chunk);
     }
   };
 
-  // Clear previous chunks when sending new message
-  const clearChunks = () => {
-    chunksRef.current = [];
+  const endStream = () => {
+    if (endedRef.current) return;
+
+    const mediaSource = mediaSourceRef.current;
+    const sourceBuffer = sourceBufferRef.current;
+
+    if (!mediaSource || !sourceBuffer) return;
+    if (mediaSource.readyState !== "open") return;
+
+    endedRef.current = true;
+
+    if (sourceBuffer.updating) {
+      sourceBuffer.addEventListener(
+        "updateend",
+        () => {
+          try {
+            mediaSource.endOfStream();
+          } catch {}
+        },
+        { once: true },
+      );
+    } else {
+      try {
+        mediaSource.endOfStream();
+      } catch {}
+    }
   };
 
-  return { audioRef, appendChunk, endStream, play, clearChunks };
-};
+  // 🔑 THIS FIXES "OLD AUDIO PLAYS AGAIN"
+  const reset = () => {
+    queueRef.current = [];
+    endedRef.current = false;
+    sourceBufferRef.current = null;
+    mediaSourceRef.current = null;
+    initMediaSource();
+  };
+
+  return {
+    audioRef,
+    appendChunk,
+    endStream,
+    reset,
+  };
+}
