@@ -79,7 +79,6 @@ export function useAudioStream(mimeType = "audio/mpeg") {
     }
   };
 
-  // 🔑 THIS FIXES "OLD AUDIO PLAYS AGAIN"
   const reset = () => {
     queueRef.current = [];
     endedRef.current = false;

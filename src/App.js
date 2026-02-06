@@ -1,6 +1,6 @@
 import "./App.css";
 
-import { TTSPlayer } from "./components/handlePlayer.tsx";
+import { TTSPlayer } from "./components/TTsPlayer";
 
 function App() {
   return (

@@ -12,7 +12,7 @@ export const TTSPlayer = () => {
 
   const { send } = useWsConnection("ws://localhost:8000", {
     onMessage: (event: MessageEvent) => {
-      // 🔊 AUDIO CHUNK
+      // AUDIO CHUNK
       if (event.data instanceof ArrayBuffer) {
         audio.appendChunk(event.data);
 
@@ -23,7 +23,7 @@ export const TTSPlayer = () => {
         return;
       }
 
-      // 🧾 CONTROL MESSAGE
+      // CONTROL MESSAGE
       const data = JSON.parse(event.data);
 
       if (data.type === "TTS_END") {
@@ -44,10 +44,10 @@ export const TTSPlayer = () => {
     const audioEl = audio.audioRef.current;
     if (!audioEl) return;
 
-    // 🔁 RESET MEDIA SOURCE FOR NEW PROMPT
+    // RESET MEDIA SOURCE FOR NEW PROMPT
     audio.reset();
 
-    // 🔓 AUTOPLAY UNLOCK (browser requirement)
+    // AUTOPLAY UNLOCK (browser requirement)
     audioEl.muted = true;
     audioEl.play().catch(() => {});
     unlockedRef.current = true;
